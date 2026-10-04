@@ -3,6 +3,8 @@
 iOS版 (SpriteKit / Swift) の `GameScene.swift` をそのまま JavaScript + Canvas に移植したブラウザ版です。
 Windows / Mac / iPhone / Android のブラウザで動きます。ビルド不要の静的ファイルだけで構成しています。
 
+GitHub Pages URL：[https://tanno-seiichi.github.io/EggDropWeb/](https://tanno-seiichi.github.io/EggDropWeb/)
+
 ## ファイル構成
 
 | ファイル | 内容 |
