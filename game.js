@@ -37,37 +37,74 @@
     miss: 'explosion3.mp3',
     stageClear: 'VSQSE_0532_sfx_up_1.mp3',
   };
-  let actx = null;
-  const sfxBuffers = {};
-  const bgm1 = new Audio(BASE + 'sound/VSQ_MUSIC_025.mp3'); // 通常モードの曲
-  const bgm2 = new Audio(BASE + 'sound/VSQ_MUSIC_037.mp3'); // 難しいモードの曲
-  bgm1.loop = true; bgm1.volume = 0.7; bgm1.preload = 'auto';
-  bgm2.loop = true; bgm2.volume = 0.8; bgm2.preload = 'auto';
+  // BGM も Web Audio で鳴らす。START のタップで AudioContext を一度起こせば、
+  // 以降はタップなしで曲を切り替えられる (Safari / iPhone で audioPlayer2 が鳴らない対策)
+  const BGM = {
+    bgm1: { file: 'VSQ_MUSIC_025.mp3', volume: 0.7 }, // 通常モードの曲
+    bgm2: { file: 'VSQ_MUSIC_037.mp3', volume: 0.8 }, // 難しいモードの曲
+  };
+  const AC = window.AudioContext || window.webkitAudioContext;
+  const actx = AC ? new AC() : null;
+  const master = actx ? actx.createGain() : null;
+  if (master) master.connect(actx.destination);
+  const buffers = {};
+  const bgmNow = { key: null, src: null, wanted: null };
   let muted = false;
   try { muted = localStorage.getItem('eggdrop.muted') === '1'; } catch (e) { /* storage unavailable */ }
+  if (master) master.gain.value = muted ? 0 : 1;
+
+  function loadSound(key, file) {
+    if (!actx) return;
+    fetch(BASE + 'sound/' + file)
+      .then(r => r.arrayBuffer())
+      .then(b => new Promise((res, rej) => actx.decodeAudioData(b, res, rej)))
+      .then(buf => {
+        buffers[key] = buf;
+        // 読み込み前に再生要求された曲はここで開始
+        if (bgmNow.wanted === key && !bgmNow.src) playBgm(key);
+      })
+      .catch(() => {});
+  }
+  for (const [key, file] of Object.entries(SOUND)) loadSound(key, file);
+  for (const [key, b] of Object.entries(BGM)) loadSound(key, b.file);
 
   function initAudio() {
-    if (actx) { if (actx.state === 'suspended') actx.resume(); return; }
-    const AC = window.AudioContext || window.webkitAudioContext;
-    if (!AC) return;
-    actx = new AC();
-    for (const [key, file] of Object.entries(SOUND)) {
-      fetch(BASE + 'sound/' + file)
-        .then(r => r.arrayBuffer())
-        .then(b => new Promise((res, rej) => actx.decodeAudioData(b, res, rej)))
-        .then(buf => { sfxBuffers[key] = buf; })
-        .catch(() => {});
-    }
+    if (!actx) return;
+    if (actx.state !== 'running') actx.resume();
+    // iOS の古い Safari 向け: タップ中に無音を1回鳴らして音声を有効化
+    const s = actx.createBufferSource();
+    s.buffer = actx.createBuffer(1, 1, 22050);
+    s.connect(master);
+    s.start(0);
   }
   function playSfx(key) {
-    if (muted || !actx || !sfxBuffers[key]) return;
+    if (!actx || !buffers[key]) return;
     const src = actx.createBufferSource();
-    src.buffer = sfxBuffers[key];
-    src.connect(actx.destination);
+    src.buffer = buffers[key];
+    src.connect(master);
     src.start();
   }
-  function playBgm(a) { a.muted = muted; const p = a.play(); if (p && p.catch) p.catch(() => {}); }
-  function stopBgm(a) { a.pause(); a.currentTime = 0; }
+  function playBgm(key) {
+    stopAllBgm();
+    bgmNow.wanted = key;
+    if (!actx || !buffers[key]) return; // 読み込み完了時に開始
+    const src = actx.createBufferSource();
+    src.buffer = buffers[key];
+    src.loop = true;
+    const g = actx.createGain();
+    g.gain.value = BGM[key].volume;
+    src.connect(g).connect(master);
+    src.start();
+    bgmNow.key = key; bgmNow.src = src;
+  }
+  function stopBgm(key) {
+    if (bgmNow.wanted === key) bgmNow.wanted = null;
+    if (bgmNow.key === key && bgmNow.src) {
+      try { bgmNow.src.stop(); } catch (e) { /* already stopped */ }
+      bgmNow.key = null; bgmNow.src = null;
+    }
+  }
+  function stopAllBgm() { stopBgm('bgm1'); stopBgm('bgm2'); }
 
   // ---------- ハイスコア ----------
   function loadHighScores() {
@@ -188,7 +225,7 @@
   function gameOver() {
     S.over = true;
     S.nextDrop = Infinity;
-    bgm1.pause(); bgm2.pause();
+    stopAllBgm();
     const hs = loadHighScores();
     hs.push(S.score);
     hs.sort((a, b) => b - a);
@@ -212,9 +249,8 @@
     S.audioNum = S.audioNum < 4 ? S.audioNum + 1 : 1;
 
     if (S.audioNum === 1) {
-      stopBgm(bgm2);
-      bgm1.currentTime = 0;
-      after(1.0, () => { if (!S.over) playBgm(bgm1); });
+      stopAllBgm();
+      after(1.0, () => { if (!S.over) playBgm('bgm1'); });
 
       // ステージクリア表示
       S.stageLabel = 'STAGE ' + S.stage + ' CLEAR';
@@ -239,9 +275,8 @@
     }
 
     if (S.audioNum === 4) {
-      bgm1.pause();
-      bgm2.currentTime = 0;
-      after(1.0, () => { if (!S.over) playBgm(bgm2); });
+      stopAllBgm();
+      after(1.0, () => { if (!S.over) playBgm('bgm2'); });
     }
 
     // 落下を一旦止め、間隔を変えて再開
@@ -432,20 +467,13 @@
   function setPaused(v) {
     paused = v;
     pauseBtn.textContent = v ? '▶' : '❚❚';
-    if (v) { bgm1.pause(); bgm2.pause(); if (actx) actx.suspend(); }
-    else {
-      if (actx) actx.resume();
-      if (!S.over) {
-        // 再生中だった曲を再開
-        if (bgmCurrent() && bgmCurrent().currentTime > 0) playBgm(bgmCurrent());
-      }
-    }
+    // AudioContext ごと止めるので、BGM も効果音も止まった位置から再開する
+    if (actx) { if (v) actx.suspend(); else actx.resume(); }
   }
-  function bgmCurrent() { return S && S.audioNum === 4 ? bgm2 : bgm1; }
 
   function toggleMute() {
     muted = !muted;
-    bgm1.muted = muted; bgm2.muted = muted;
+    if (master) master.gain.value = muted ? 0 : 1;
     muteBtn.textContent = muted ? '🔇' : '🔊';
     try { localStorage.setItem('eggdrop.muted', muted ? '1' : '0'); } catch (e) { /* ignore */ }
   }
@@ -464,7 +492,7 @@
 
   function showTitle(lastScore) {
     running = false; paused = false;
-    stopBgm(bgm1); stopBgm(bgm2);
+    stopAllBgm();
     hud.hidden = true;
     titleEl.hidden = false;
     hiEl.textContent = loadHighScores()[0];
@@ -482,9 +510,7 @@
     pauseBtn.textContent = '❚❚';
     newGame();
     running = true; paused = false;
-    stopBgm(bgm2);
-    bgm1.currentTime = 0;
-    playBgm(bgm1);
+    playBgm('bgm1');
   }
   startBtn.addEventListener('click', startGame);
 
