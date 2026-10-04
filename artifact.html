@@ -1,0 +1,63 @@
+<title>EggDrop</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; color-scheme: dark; overflow: hidden; }
+  html { box-sizing: border-box; }
+  body {
+    display: flex; align-items: center; justify-content: center;
+    font-family: "Helvetica Neue", Helvetica, Arial, "Hiragino Sans", "Yu Gothic", sans-serif;
+    color: #fff; user-select: none; -webkit-user-select: none;
+    touch-action: none; -webkit-tap-highlight-color: transparent;
+  }
+  #wrap { position: relative; container-type: size; }
+  canvas { display: block; touch-action: none; cursor: grab; }
+  canvas:active { cursor: grabbing; }
+  #title {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 2.2cqh;
+    background: #fff url(assets/img/icon-512.png) center 22% / 62% no-repeat;
+    color: #222; text-align: center;
+  }
+  #title[hidden], #hud[hidden], #loading[hidden], #lastScore[hidden] { display: none; }
+  #title h1 { margin: 52cqh 0 0; font-size: 6cqh; letter-spacing: .05em; color: #e2459a; text-shadow: 0.3cqh 0.3cqh 0 #222; }
+  #start {
+    font: bold 3.4cqh "Helvetica Neue", Helvetica, Arial, sans-serif; color: #007aff;
+    background: none; border: 0.3cqh solid #007aff; border-radius: 1.4cqh;
+    padding: 1cqh 4cqh; cursor: pointer;
+  }
+  #start:hover:not(:disabled), #start:focus-visible { background: #007aff; color: #fff; outline: none; }
+  #start:disabled { opacity: .4; cursor: default; }
+  .info { font-size: 2cqh; line-height: 1.6; color: #444; }
+  #lastScore { font-weight: bold; font-size: 2.6cqh; color: #222; }
+  .credit { position: absolute; bottom: 1.2cqh; font-size: 1.4cqh; color: #888; }
+  #hud { position: absolute; right: 1.2cqh; bottom: 1.2cqh; display: flex; gap: 1cqh; }
+  #hud button {
+    width: 5.4cqh; height: 5.4cqh; font-size: 2.4cqh; border-radius: 50%;
+    border: 0; background: rgba(0,0,0,.45); color: #fff; cursor: pointer;
+  }
+</style>
+
+<div id="wrap">
+  <canvas id="game" aria-label="EggDrop ゲーム画面"></canvas>
+  <div id="title" hidden>
+    <h1>EGG DROP</h1>
+    <div id="lastScore" hidden></div>
+    <button id="start" disabled>START</button>
+    <div class="info">HIGH-SCORE : <span id="hi">0</span></div>
+    <div class="info">ドラッグ / スワイプ または 矢印キー・WASD で移動<br>P / Esc: 一時停止　M: 音のオン・オフ</div>
+    <div class="credit">Illustrations &amp; backgrounds designed by Freepik</div>
+  </div>
+  <div id="hud" hidden>
+    <button id="muteBtn" aria-label="音のオン・オフ">🔊</button>
+    <button id="pauseBtn" aria-label="一時停止">❚❚</button>
+  </div>
+</div>
+<div id="loading" style="position:absolute;color:#fff">Loading…</div>
+<script src="game.js"></script>
+<script>
+  // canvas のサイズに合わせてタイトル画面を重ねる
+  (function () {
+    const c = document.getElementById('game'), w = document.getElementById('wrap');
+    function fit() { w.style.width = c.style.width; w.style.height = c.style.height; }
+    new ResizeObserver(fit).observe(c); fit();
+  })();
+</script>
