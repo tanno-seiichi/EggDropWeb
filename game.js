@@ -3,7 +3,11 @@
 (() => {
   'use strict';
 
-  const W = 750, H = 1334;
+  // 幅は 750 固定。縦画面では高さを画面の縦横比に合わせて伸縮し、黒帯を出さずに全面表示する
+  // (iOS版も frame.height 基準で配置しているので、高さが変わっても配置が崩れない)
+  const W = 750, H_DEFAULT = 1334, H_MIN = 1000, H_MAX = 1700;
+  let H = H_DEFAULT;
+  let pendingDH = 0; // ゲーム中に高さが変わった分 (プレーヤー位置の補正用)
   const BASE = (window.EGGDROP_BASE || '') + 'assets/';
 
   // ---------- 画像 ----------
@@ -124,6 +128,10 @@
   let dpr = 1;
   function resize() {
     const vw = document.body.clientWidth || window.innerWidth, vh = document.body.clientHeight || window.innerHeight;
+    // 縦画面: 画面の縦横比に合わせる / 横画面 (PC): iOS版と同じ 750x1334
+    const newH = vh > vw ? Math.round(Math.max(H_MIN, Math.min(H_MAX, W * vh / vw))) : H_DEFAULT;
+    pendingDH += newH - H;
+    H = newH;
     const s = Math.min(vw / W, vh / H);
     const cw = Math.floor(W * s), ch = Math.floor(H * s);
     canvas.style.width = cw + 'px';
@@ -161,10 +169,10 @@
   const fighterSize = W / 5;       // 戦闘機: 幅の 1/5
   const lifeSize = W / 10;         // ライフ: 幅の 1/10
   const playerSize = W / 5;        // プレーヤー: 幅の 1/5
-  const offsetY = H / 20;
 
   function newGame() {
     gameTime = 0;
+    pendingDH = 0;
     timers = [];
     const hs = loadHighScores();
     S = {
@@ -178,7 +186,7 @@
       bg: 1,
       player: {
         x: 0,
-        y: (-H / 2) + offsetY + playerSize,
+        y: (-H / 2) + H / 20 + playerSize,
         frames: Constants.Player1Images, tpf: 0.2,
       },
       objs: [],
@@ -300,6 +308,8 @@
 
     // キーボード移動
     const p = S.player;
+    // 画面サイズが変わったら、プレーヤーと下端の距離を保つ
+    if (pendingDH) { p.y -= pendingDH / 2; pendingDH = 0; }
     const kdx = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
     const kdy = (keys.up ? 1 : 0) - (keys.down ? 1 : 0);
     if (kdx || kdy) {

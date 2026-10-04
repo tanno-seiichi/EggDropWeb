@@ -9,6 +9,7 @@ Windows / Mac / iPhone / Android のブラウザで動きます。ビルド不�
 |---|---|
 | `index.html` | 画面・スタート画面 |
 | `game.js` | ゲーム本体 (GameScene.swift の移植) |
+| `manifest.json` | ホーム画面に追加したときの全画面表示設定 |
 | `assets/img/` | キャラ・卵・敵・背景画像 (背景は 1334px 高に縮小し JPEG 化) |
 | `assets/sound/` | BGM (128kbps に再エンコード) と効果音 |
 | `artifact.html` | Claude アーティファクト公開用 (通常の公開では不要) |
