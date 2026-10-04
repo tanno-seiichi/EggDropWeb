@@ -17,7 +17,7 @@
     background: #fff url(assets/img/icon-512.png) center 22% / 62% no-repeat;
     color: #222; text-align: center;
   }
-  #title[hidden], #hud[hidden], #loading[hidden], #lastScore[hidden] { display: none; }
+  #title[hidden], #loading[hidden], #lastScore[hidden] { display: none; }
   #title h1 { margin: 52cqh 0 0; font-size: 6cqh; letter-spacing: .05em; color: #e2459a; text-shadow: 0.3cqh 0.3cqh 0 #222; }
   #start {
     font: bold 3.4cqh "Helvetica Neue", Helvetica, Arial, sans-serif; color: #007aff;
@@ -29,11 +29,6 @@
   .info { font-size: 2cqh; line-height: 1.6; color: #444; }
   #lastScore { font-weight: bold; font-size: 2.6cqh; color: #222; }
   .credit { position: absolute; bottom: 1.2cqh; font-size: 1.4cqh; color: #888; }
-  #hud { position: absolute; right: 1.2cqh; bottom: 1.2cqh; display: flex; gap: 1cqh; }
-  #hud button {
-    width: 5.4cqh; height: 5.4cqh; font-size: 2.4cqh; border-radius: 50%;
-    border: 0; background: rgba(0,0,0,.45); color: #fff; cursor: pointer;
-  }
 </style>
 
 <div id="wrap">
@@ -45,10 +40,6 @@
     <div class="info">HIGH-SCORE : <span id="hi">0</span></div>
     <div class="info">ドラッグ / スワイプ または 矢印キー・WASD で移動<br>P / Esc: 一時停止　M: 音のオン・オフ</div>
     <div class="credit">Illustrations &amp; backgrounds designed by Freepik</div>
-  </div>
-  <div id="hud" hidden>
-    <button id="muteBtn" aria-label="音のオン・オフ">🔊</button>
-    <button id="pauseBtn" aria-label="一時停止">❚❚</button>
   </div>
 </div>
 <div id="loading" style="position:absolute;color:#fff">Loading…</div>

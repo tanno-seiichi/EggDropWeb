@@ -476,7 +476,6 @@
 
   function setPaused(v) {
     paused = v;
-    pauseBtn.textContent = v ? '▶' : '❚❚';
     // AudioContext ごと止めるので、BGM も効果音も止まった位置から再開する
     if (actx) { if (v) actx.suspend(); else actx.resume(); }
   }
@@ -484,7 +483,6 @@
   function toggleMute() {
     muted = !muted;
     if (master) master.gain.value = muted ? 0 : 1;
-    muteBtn.textContent = muted ? '🔇' : '🔊';
     try { localStorage.setItem('eggdrop.muted', muted ? '1' : '0'); } catch (e) { /* ignore */ }
   }
 
@@ -493,17 +491,10 @@
   const startBtn = document.getElementById('start');
   const lastScoreEl = document.getElementById('lastScore');
   const hiEl = document.getElementById('hi');
-  const hud = document.getElementById('hud');
-  const pauseBtn = document.getElementById('pauseBtn');
-  const muteBtn = document.getElementById('muteBtn');
-  muteBtn.textContent = muted ? '🔇' : '🔊';
-  muteBtn.addEventListener('click', toggleMute);
-  pauseBtn.addEventListener('click', () => { if (running) setPaused(!paused); });
 
   function showTitle(lastScore) {
     running = false; paused = false;
     stopAllBgm();
-    hud.hidden = true;
     titleEl.hidden = false;
     hiEl.textContent = loadHighScores()[0];
     if (lastScore != null) {
@@ -516,8 +507,6 @@
   function startGame() {
     initAudio();
     titleEl.hidden = true;
-    hud.hidden = false;
-    pauseBtn.textContent = '❚❚';
     newGame();
     running = true; paused = false;
     playBgm('bgm1');
